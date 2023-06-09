@@ -31,6 +31,7 @@ async function run() {
       .db("capturedVisions")
       .collection("instructors");
 
+    // getting popular Classes based on number of enrolled
     app.get("/popularClasses", async (req, res) => {
       const query = {
         enrolled: { $gt: 2000 },
@@ -45,6 +46,7 @@ async function run() {
       res.send(result);
     });
 
+    // getting popular instructors based on number students
     app.get("/popularInstructors", async (req, res) => {
       const query = {
         students: { $gt: 5000 },
@@ -57,6 +59,12 @@ async function run() {
       const result = await InstructorsCollection.find(query, options).toArray();
       res.send(result);
     });
+
+    // getting all the instructors
+    app.get("/allInstructors", async (req, res)=>{
+      const result = await InstructorsCollection.find().toArray();
+      res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
