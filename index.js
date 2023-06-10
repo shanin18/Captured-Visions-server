@@ -30,6 +30,9 @@ async function run() {
     const instructorsCollection = client
       .db("capturedVisions")
       .collection("instructors");
+    const selectedClassesCollection = client
+      .db("capturedVisions")
+      .collection("selectedClasses");
 
     // getting popular Classes based on number of enrolled
     app.get("/popularClasses", async (req, res) => {
@@ -71,6 +74,13 @@ async function run() {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
+    
+    // post all selected classes  
+    app.post("/selectedClasses", async (req, res) =>{
+      const item = req.body;
+      const result = await selectedClassesCollection.insertOne(item)
+      res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
