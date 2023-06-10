@@ -27,7 +27,7 @@ async function run() {
     const classesCollection = client
       .db("capturedVisions")
       .collection("classes");
-    const InstructorsCollection = client
+    const instructorsCollection = client
       .db("capturedVisions")
       .collection("instructors");
 
@@ -56,15 +56,21 @@ async function run() {
         projection: { name: 1, image: 1, students: 1 },
       };
 
-      const result = await InstructorsCollection.find(query, options).toArray();
+      const result = await instructorsCollection.find(query, options).toArray();
       res.send(result);
     });
 
-    // getting all the instructors
+    // getting all instructors data
     app.get("/allInstructors", async (req, res)=>{
-      const result = await InstructorsCollection.find().toArray();
+      const result = await instructorsCollection.find().toArray();
       res.send(result);
-    })
+    });
+
+    // getting all classes data
+    app.get("/allClasses", async (req, res) =>{
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
