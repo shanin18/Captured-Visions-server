@@ -8,7 +8,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.gacal02.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -64,24 +64,43 @@ async function run() {
     });
 
     // getting all instructors data
-    app.get("/allInstructors", async (req, res)=>{
+    app.get("/allInstructors", async (req, res) => {
       const result = await instructorsCollection.find().toArray();
       res.send(result);
     });
 
     // getting all classes data
-    app.get("/allClasses", async (req, res) =>{
+    app.get("/allClasses", async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     });
+
+    // getting my selected classes for students
+    app.get("/selectedClasses", async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const query = { email: email };
+      const result = await selectedClassesCollection.find(query).toArray();
+      res.send(result);
+    });
     
-    // post all selected classes  
-    app.post("/selectedClasses", async (req, res) =>{
+    // post my selected classes for students
+    app.post("/selectedClasses", async (req, res) => {
       const item = req.body;
-      const result = await selectedClassesCollection.insertOne(item)
+      const result = await selectedClassesCollection.insertOne(item);
+      res.send(result);
+    });
+
+    // delete single data from my selected classes
+    app.delete("/selectedClasses/:id", async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await selectedClassesCollection.deleteOne(query);
       res.send(result);
     })
-
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
