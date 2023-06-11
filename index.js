@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 const verifyJWT = (req, res, next) => {
-  const authorization = req.header.authorization;
+  const authorization = req.headers.authorization;
   if (!authorization) {
     return res
       .status(401)
@@ -51,6 +51,8 @@ async function run() {
     const instructorsCollection = client
       .db("capturedVisions")
       .collection("instructors");
+
+    const usersCollection = client.db("capturedVisions").collection("users");
     const selectedClassesCollection = client
       .db("capturedVisions")
       .collection("selectedClasses");
@@ -104,13 +106,25 @@ async function run() {
       res.send(result);
     });
 
+    // storing all users
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+
+      if (existingUser) {
+        return res.send({ message: "user already exists" });
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
     // getting my selected classes for students
     app.get("/selectedClasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
       if (!email) {
         res.send([]);
       }
-
       const decodedEmail = req.decoded.email;
       if (email !== decodedEmail) {
         return res
@@ -139,10 +153,10 @@ async function run() {
 
     app.post("/createPaymentIntent", async (req, res) => {
       const { totalPrice } = req.body;
+
       console.log("totalPrice:", totalPrice);
 
-      const amount = parseInt(totalPrice) * 100;
-
+      const amount = totalPrice * 100;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
