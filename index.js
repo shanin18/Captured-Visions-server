@@ -1,12 +1,33 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
 app.use(express.json());
+
+const verifyJWT = (req, res, next) => {
+  const authorization = req.header.authorization;
+  if (!authorization) {
+    return res
+      .status(401)
+      .send({ error: true, message: "unauthorized access" });
+  }
+
+  // bearer token
+  const token = authorization.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ error: true, message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.gacal02.mongodb.net/?retryWrites=true&w=majority`;
@@ -33,6 +54,14 @@ async function run() {
     const selectedClassesCollection = client
       .db("capturedVisions")
       .collection("selectedClasses");
+
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1hr",
+      });
+      res.send({ token });
+    });
 
     // getting popular Classes based on number of enrolled
     app.get("/popularClasses", async (req, res) => {
@@ -76,16 +105,23 @@ async function run() {
     });
 
     // getting my selected classes for students
-    app.get("/selectedClasses", async (req, res) => {
+    app.get("/selectedClasses", verifyJWT, async (req, res) => {
       const email = req.query.email;
       if (!email) {
         res.send([]);
+      }
+
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
       const query = { email: email };
       const result = await selectedClassesCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     // post my selected classes for students
     app.post("/selectedClasses", async (req, res) => {
       const item = req.body;
@@ -94,13 +130,30 @@ async function run() {
     });
 
     // delete single data from my selected classes
-    app.delete("/selectedClasses/:id", async(req, res) =>{
+    app.delete("/selectedClasses/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) };
       const result = await selectedClassesCollection.deleteOne(query);
       res.send(result);
-    })
-    
+    });
+
+    app.post("/createPaymentIntent", async (req, res) => {
+      const { totalPrice } = req.body;
+      console.log("totalPrice:", totalPrice);
+
+      const amount = parseInt(totalPrice) * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
