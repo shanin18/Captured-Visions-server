@@ -51,11 +51,13 @@ async function run() {
     const instructorsCollection = client
       .db("capturedVisions")
       .collection("instructors");
-
     const usersCollection = client.db("capturedVisions").collection("users");
     const selectedClassesCollection = client
       .db("capturedVisions")
       .collection("selectedClasses");
+    const paymentCollection = client
+      .db("capturedVisions")
+      .collection("payments");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -106,6 +108,14 @@ async function run() {
       res.send(result);
     });
 
+
+    //storing new classes to classes database
+    app.post("/allClasses", async(req, res)=>{
+      const newClass = req.body;
+      const result = await classesCollection.insertOne(newClass);
+      res.send(result);
+    })
+
     // storing all users
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -116,6 +126,30 @@ async function run() {
         return res.send({ message: "user already exists" });
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //getting all users
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // updating users role
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const role = req.body;
+      const filter = {
+        _id: new ObjectId(id),
+      };
+
+      const updateDoc = {
+        $set: {
+          role: role.role,
+        },
+      };
+
+      const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
@@ -151,11 +185,9 @@ async function run() {
       res.send(result);
     });
 
+    // payment related
     app.post("/createPaymentIntent", async (req, res) => {
       const { totalPrice } = req.body;
-
-      console.log("totalPrice:", totalPrice);
-
       const amount = totalPrice * 100;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -163,9 +195,47 @@ async function run() {
         payment_method_types: ["card"],
       });
 
+      // storing the payment info to database
+      app.post("/payments", async (req, res) => {
+        const payment = req.body;
+        const insertResult = await paymentCollection.insertOne(payment);
+
+        // deleting from selected page
+        const query = {
+          _id: { $in: payment.selectedClasses.map((id) => new ObjectId(id)) },
+        };
+        const deleteResult = await selectedClassesCollection.deleteMany(query);
+
+        // decrementing or updating available seats when the payment succeeded
+        const filter = {
+          _id: { $in: payment.allClasses.map((id) => new ObjectId(id)) },
+        };
+        const classes = await classesCollection.find(filter).toArray();
+        let patchResult;
+        for (const singleClass of classes) {
+          const updatedFilter = { _id: new ObjectId(singleClass._id) };
+          const updateDoc = {
+            $set: {
+              availableSeats: singleClass.availableSeats - 1,
+            },
+          };
+          patchResult = await classesCollection.updateOne(
+            updatedFilter,
+            updateDoc
+          );
+        }
+
+        res.send({ insertResult, deleteResult, patchResult });
+      });
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    // getting payment info from database
+    app.get("/payments", async (req, res) => {
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
