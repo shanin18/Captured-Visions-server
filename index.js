@@ -295,7 +295,7 @@ async function run() {
     );
 
     // updating users role
-    app.patch("/users/admin/:id", async (req, res) => {
+    app.patch("/users/admin/:id",verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const role = req.body;
       const filter = {
