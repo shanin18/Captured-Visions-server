@@ -144,7 +144,7 @@ async function run() {
     });
 
     // getting updating data by providing feedback to instructor
-    app.patch("/allClasses/:id", async (req, res) => {
+    app.patch("/allClasses/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const message = req.body;
@@ -159,12 +159,12 @@ async function run() {
     // getting all instructor classes
     app.get("/myClasses", verifyJWT, verifyInstructor, async (req, res) => {
       const email = req.query.email;
-      if(!email){
-        return res.send([])
+      if (!email) {
+        return res.send([]);
       }
 
-      if(req.decoded.email !== email){
-        res.status(403).send({error:true, message:"forbidden access"})
+      if (req.decoded.email !== email) {
+        res.status(403).send({ error: true, message: "forbidden access" });
       }
 
       const query = { instructorEmail: email };
@@ -225,18 +225,23 @@ async function run() {
     });
 
     // updating instructor classes status
-    app.patch("/manageAllClasses/:id", async (req, res) => {
-      const id = req.params.id;
-      const status = req.body;
-      const query = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          status: status.status,
-        },
-      };
-      const result = await classesCollection.updateOne(query, updateDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/manageAllClasses/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const status = req.body;
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            status: status.status,
+          },
+        };
+        const result = await classesCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
 
     //getting all users
     app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
@@ -326,7 +331,7 @@ async function run() {
     });
 
     // post my selected classes for students
-    app.post("/selectedClasses", async (req, res) => {
+    app.post("/selectedClasses", verifyJWT, async (req, res) => {
       const item = req.body;
       const result = await selectedClassesCollection.insertOne(item);
       res.send(result);
@@ -341,7 +346,7 @@ async function run() {
     });
 
     // payment related
-    app.post("/createPaymentIntent", async (req, res) => {
+    app.post("/createPaymentIntent", verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = price * 100;
       const paymentIntent = await stripe.paymentIntents.create({
