@@ -4,7 +4,6 @@
 
 # 📗 Table of Contents <a name="about-project">Captured Visions Server</a>
 
-- [📸 Captured Visions Server ](#-Captured-Visions-Server-)
   - [🛠 Built With ](#-built-with-)
     - [Tech Stack ](#tech-stack-)
   - [💻 Getting Started ](#-getting-started-)
@@ -17,12 +16,6 @@
   - [⭐️ Show your support ](#️-show-your-support-)
 
 <!-- PROJECT DESCRIPTION -->
-
-# 📸 Captured Visions Server <a name="about-project"></a>
-
-
-Captured Visions is a MERN-based photography school website with Firebase authentication. It features a Course Marketplace for browsing detailed courses and an Instructor Portal for managing classes.The integration of secure payment gateways ensures smooth transactions, while the Material-UI interface guarantees an intuitive user experience across all devices.
-
 
 ## 🛠 Built With <a name="built-with"></a>
 
