@@ -2,7 +2,7 @@
 
 <!-- TABLE OF CONTENTS -->
 
-# 📗 Table of Contents <a name="about-project">Captured Visions Server</a>
+# 📗 Table of Contents
 
   - [🛠 Built With ](#-built-with-)
     - [Tech Stack ](#tech-stack-)
