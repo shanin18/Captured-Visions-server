@@ -63,7 +63,7 @@ Install this project with:
 
 
 ```sh
-  cd Dua-Ruqyah
+  cd Captured-Visions
   npm install
 ```
 
